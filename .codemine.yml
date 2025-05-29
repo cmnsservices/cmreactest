@@ -1,1 +1,47 @@
-echo Hi 
+version: 1.0
+stages:
+- LocalZoho
+jobs:
+  generatecodeminemainbuild:
+    description: build project using cmtool
+    type: cmtools
+    stage: LocalZoho
+    timeout: 30
+    priority: major
+    parameters:
+      integration: Codemine
+      buildType: FULLBUILD
+      checkoutLabel: codemine-main
+      customization: CUSTOM_BUILD_TYPE=Cloud,BUILD_TASKS=COMPLETE,PATCH_BUILD_CHANGESET=NA
+      securityReportNeeded: 'true'
+    retry:
+      max: 1
+      delay: 5
+      when:
+      - any_failure
+  localzohodeployment:
+    description: Localzoho deployment using sd
+    type: sd
+    stage: LocalZoho
+    after:
+    - generatecodeminemainbuild
+    timeout: 60
+    priority: major
+    parameters:
+      integration: CodemineCICD
+      region: CT
+      datacenter: CT1
+      buildStage: production
+      buildJobUrl: $CM_CMT_BUILD_URL_GENERATECODEMINEMAINBUILD
+      buildZipName: ZohoCodeMine.zip
+      parallelProducts:
+      - CODEMINE_KAFKA
+      buildOptions:
+        staticNeeded: 'true'
+        iastJarNeeded: 'true'
+      gridEdited: false
+    retry:
+      max: 1
+      delay: 5
+      when:
+      - any_failure
